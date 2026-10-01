@@ -1,0 +1,5 @@
+.project-gov/
+node_modules/
+*.tmp-*
+.DS_Store
+Thumbs.db

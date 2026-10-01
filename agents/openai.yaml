@@ -1,0 +1,6 @@
+interface:
+  display_name: "项目状态治理"
+  short_description: "按需维护项目持久状态、知识、检查点与交接"
+  icon_small: "./assets/project-delivery-engine-logo.png"
+  icon_large: "./assets/project-delivery-engine-logo.png"
+  default_prompt: "使用 $project-delivery-engine 判断当前任务是否确实需要项目持久状态治理；仅在需要时应用。"

@@ -1,0 +1,31 @@
+{
+  "name": "project-delivery-engine",
+  "version": "0.3.8-rc7",
+  "description": "按需维护项目持久状态、资料索引、项目知识、检查点与交接。",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "项目状态治理",
+    "shortDescription": "按需维护项目持久状态、知识、检查点与交接",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "判断当前任务是否确实需要项目持久状态治理；仅在需要时应用。"
+    ],
+    "brandColor": "#7A0C15",
+    "composerIcon": "./assets/project-delivery-engine-logo.png",
+    "logo": "./assets/project-delivery-engine-logo.png",
+    "longDescription": "为AI编程项目保存进度、决定、验证结果和交接入口，帮助新对话接上工作。",
+    "developerName": "Project Delivery Engine contributors",
+    "category": "Developer Tools"
+  },
+  "author": {
+    "name": "Project Delivery Engine contributors",
+    "url": "https://github.com/haoyun18881-beep/project-delivery-engine"
+  },
+  "homepage": "https://github.com/haoyun18881-beep/project-delivery-engine",
+  "repository": "https://github.com/haoyun18881-beep/project-delivery-engine",
+  "license": "Apache-2.0"
+}
