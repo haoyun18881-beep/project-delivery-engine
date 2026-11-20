@@ -1,6 +1,8 @@
 <p align="center"><img src="assets/project-delivery-engine-logo.png" width="96" alt="Project Delivery Engine"></p>
 
-# Project Delivery Engine · 项目管理套装
+# 项目交接包 · Project Handoff Kit
+
+换了 Codex 对话也能接着做，想知道当初为什么这么定，也能查到出处。值得下次再用的做法，可以整理进自己的笔记库。
 
 你用 Codex 做一个活动报名工具，换了新对话。它从项目文件接上，知道首版已经选用本机 CSV，下一步是验证空名单导出。你问起为什么先做 CSV，它按交接里的会话编号查到当时的原话：“因为签到点可能断网，先提供本机生成的 CSV，现场仍能离线核对名单。”它把日记位置也给你，你可以回去核对。
 
@@ -10,29 +12,33 @@
 | --- | --- |
 | 现在做到哪，下一步做什么？ | 工程内的五件套，使用 `project-delivery-engine`。 |
 | 当时具体说了什么，证据在哪？ | 用 `codex-qa-diary-recall` 查 QA 日记和清单。日记漏掉一条时，可以定向补查原会话。 |
-| 有没有值得在这次复用的经验？ | Obsidian Wiki，使用 `personal-knowledge-recall` 定向查条目。 |
+| 有没有值得在这次复用的经验？ | Obsidian 笔记库，使用 `personal-knowledge-recall` 定向查条目。 |
+
+上表里的三个英文名称是 **Skill**，也就是给 Codex 的操作说明。安装后，Codex 可以按需读取。
 
 ## 第一次用，把这段发给 Codex
 
-在本页点 **Code → Download ZIP** 并解压，然后用 Codex 打开解压后的目录。复制下面这段话。
+电脑上需要 Codex、[Python](https://www.python.org/downloads/) 和 [Node.js](https://nodejs.org/en/download)。建议从已验证的 Windows、Python 3.12 和 Node.js 26 开始。笔记可以用 Obsidian 或普通文本编辑器打开。
+
+在本页点 **Code → Download ZIP**，解压到一层较浅的目录，例如「下载」下的文件夹。用 Codex 打开解压后的目录，然后复制下面这段话。
 
 ```text
-我第一次用这个套装。请先检查电脑上能运行的 Python（3.10 或更新版）和 Node.js。
-找到哪条命令可用，就用它运行 suite/setup.py demo。试用只用安装包自带的合成数据。
-做完告诉我示例项目和 Wiki 在哪里，以及我到示例项目的新对话里可以问什么。
+我第一次用项目交接包。请先检查 Python 和 Node.js。缺哪个就告诉我去哪里安装。
+准备好后运行 python -B suite/setup.py demo。用当前安装包里的合成数据试用，范围限新建的示例目录。
+完成后告诉我示例项目和笔记库在哪，以及我打开示例项目后能问什么。
 ```
 
-自己运行只需要一条命令。在解压目录执行 `python -B suite/setup.py demo`（系统用 `python3` 时换成它）。工具会创建新目录，打印示例项目和 Wiki 的位置。示例接续后能查到 2 条日记问答，再从单个原会话补回 1 条。3 条材料只留下 1 条可复用经验，重跑待处理为 0。周检覆盖 6 页，并报出 1 处故意留在示例中的证据缺口。
+也可以在解压目录自己运行 `python -B suite/setup.py demo`。系统用 `python3` 时换成它。示例默认放在系统临时目录。想长期留着试用时，可以用 `--root` 指定一个尚不存在的目录。
 
-在 Codex 中打开输出里的 `project`（名为 **报名工具**），新开一段对话并输入下面的话。
+看到「示例已通过自检」后，在 Codex 打开显示的 **示例项目**（报名工具）。新开一段对话并输入下面的话。
 
-> 用 $project-delivery-engine 接续这个示例。读项目入口，告诉我下一步和验收条件，先不修改项目。
+> 只读当前示例项目的 `.agents/skills/project-delivery-engine/SKILL.md` 和示例项目入口，告诉我下一步和验收条件。只在这个示例目录查资料。
 
 预期下一步是**验证空名单导出**，条件是 CSV 只有表头且人数显示为 0。接着查当时的依据和可复用经验。
 
-> 用 $codex-qa-diary-recall 查当时为什么选择 CSV，带上证据位置。再用 $personal-knowledge-recall 查有什么可复用的离线核对经验。
+> 只用这个示例项目 `.agents/skills` 下的取证和知识召回说明，以及它们自带的本地配置。查当时为什么选择 CSV，给出证据位置，再从示例笔记库查离线核对经验。范围限示例数据。
 
-预期答复能找到示例日记、锚点和会话编号，也能从 Wiki 找到带适用条件的笔记。不同系统的本地时区可能使日记日期和时间不同。
+预期能找到示例日记、具体位置和会话编号，也能在笔记库找到带适用条件的经验。已经装过同名 Skill 时，试用以示例里的路径为准，安装到真实项目时再核对要用哪一份。
 
 ## 用在自己的项目
 
@@ -48,7 +54,7 @@
 2. 在工程根打开 Codex，说“用 $project-delivery-engine 为本项目建档，复用已有资料，记录当前状态和下一步。”已有项目可直接接续。要换对话时，只在状态、验证或交接有实质变化时整理进展。
 3. 确认一次手动采集和取证，再按 [自动化模板](suite/automations.md#在-codex-中设定计划) 启用每日增量同步提炼、每周全库语义体检。日更只收录有出处和适用边界的做法。周检逐页核对，列出重复、冲突、过时、断链和可定位的证据缺口。
 
-五件套各有分工：
+项目的五份交接文件各有分工。
 
 | 文件 | 读它能知道什么 |
 | --- | --- |
@@ -62,8 +68,8 @@
 
 ## 组件与验证
 
-- **项目管理主件**：仓库根目录的 [Skill](SKILL.md) 和 [治理命令](references/project-gov-cli.md) 可单独使用，`project-gov.mjs` 只依赖 Node 内置模块。安装整个套装时无需另外安装项目管理插件。
-- **QA 与知识召回**随本仓库一起提供。解压后安装可以离线进行。[组件来源与许可证](suite/components/README.md) 说明各部分的版本和使用条款。
+- **项目管理主件**仍叫 Project Delivery Engine。根目录的 [Skill](SKILL.md) 和 [命令说明](references/project-gov-cli.md) 也可以单独用。
+- **QA 与知识召回**随本仓库一起提供。解压后安装可以离线进行。项目管理和 QA 使用 Apache-2.0，个人知识召回使用 BUSL-1.1，商用按该组件的许可条款办理。[组件来源与许可证](suite/components/README.md)
 - 实际运行的本机日记、会话、Wiki、运行目录和每份 Skill 的 `local-config.json` 都应保留在本机。让 AI 阅读源材料时仍受你所用服务的数据处理规则约束。
 
-整套脚本示例已在 Windows、Node.js 26 和 Python 3.12 验证。项目治理 CLI 的 [维护者测试](tests/README.md) 可单独运行。计划任务仍需在自己的 Codex 本地环境启用并查看首轮结果。其他宿主和系统未作整套验证。
+示例自检会找出 2 条日记问答和 1 条补证，把其中 1 条经验写入笔记库。增量重跑待处理为 0，周检覆盖 6 页并报出 1 处预置的证据缺口。计划任务需要在自己的 Codex 本地环境启用并查看首轮结果。维护者可另跑 [项目治理测试](tests/README.md)。

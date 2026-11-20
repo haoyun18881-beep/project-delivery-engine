@@ -209,6 +209,7 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     init = commands.add_parser("demo", help="create a new demo directory with synthetic data")
     init.add_argument("--root", type=Path, help="new directory (default: a fresh system temp directory)")
+    init.add_argument("--json", action="store_true", help="return machine-readable output")
     regular = commands.add_parser("install", help="install in explicitly selected directories")
     for name in ("skills-dir", "vault", "sessions", "runtime"):
         regular.add_argument("--" + name, type=Path, required=True)
@@ -216,20 +217,48 @@ def main():
     regular.add_argument("--restricted", action="append", default=[])
     regular.add_argument("--supplement-sessions", type=Path, help="optional separate directory for targeted Session fallback")
     regular.add_argument("--notes-dir", default=DEFAULT_NOTES_DIR, help="relative Wiki folder for reviewed new notes")
+    regular.add_argument("--json", action="store_true", help="return machine-readable output")
     args = parser.parse_args()
     if args.command == "demo":
         root = args.root or (Path(tempfile.gettempdir()).resolve() / f"pde-demo-{uuid4().hex[:12]}")
         result = demo(root)
-        print(json.dumps(result, ensure_ascii=False), flush=True)
-        run(sys.executable, "-B", SUITE / "verify-demo.py", "--root", root)
-        return
+        check = subprocess.run(
+            [sys.executable, "-B", str(SUITE / "verify-demo.py"), "--root", str(root)],
+            capture_output=True, text=True, encoding="utf-8",
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+        )
+        if check.returncode:
+            raise ValueError(f"示例目录位于 {root}\n{check.stderr.strip()}")
+        proof = json.loads(check.stdout)
+        if args.json:
+            print(json.dumps({**result, "verification": proof}, ensure_ascii=False))
+        else:
+            print("项目交接包示例已通过自检。")
+            print(f"示例项目  {result['project']}")
+            print(f"示例笔记库  {result['vault']}")
+            print(
+                f"查到 {proof['qa_turns']} 条日记问答，补回 {proof['session_supplements']} 条，"
+                f"整理出 {proof['wiki_notes_created']} 条经验。"
+            )
+            print(
+                f"重跑待处理 {proof['incremental_pending']} 条。"
+                f"周检覆盖 {proof['weekly_pages_reviewed']} 页，发现 {proof['weekly_source_gaps']} 处示例缺证。"
+            )
+            print("在 Codex 打开示例项目，照 README 里的两段提示试用。")
     else:
         restricted = list(dict.fromkeys((*DEFAULT_RESTRICTED, *args.restricted)))
         result = install(
             args.skills_dir, args.vault, args.sessions, args.runtime, args.entry,
             restricted, args.supplement_sessions, args.notes_dir,
         )
-    print(json.dumps(result, ensure_ascii=False))
+        if args.json:
+            print(json.dumps(result, ensure_ascii=False))
+        else:
+            print("项目交接包已安装。")
+            print(f"Skill 目录  {result['skills']}")
+            print(f"笔记库  {result['vault']}")
+            print(f"运行目录  {result['runtime']}")
+            print("按 README 的安装说明手动试采集后，再设置计划任务。")
 
 
 if __name__ == "__main__":

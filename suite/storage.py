@@ -19,7 +19,9 @@ def local_path(value):
     for part in (*reversed(path.parents), path):
         if os.path.lexists(part) and is_redirect(part):
             raise ValueError(f"Redirected path is outside the supported scope: {part}")
-    return path
+    # Canonicalize existing ancestors after the redirect check. Windows can
+    # name the same directory with either a short (8.3) name or its long name.
+    return path.resolve()
 
 
 def relative_parts(value):
