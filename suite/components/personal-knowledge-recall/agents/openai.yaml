@@ -1,0 +1,7 @@
+interface:
+  display_name: "个人知识库召回"
+  short_description: "只在 Obsidian 中定向查找用户明确指定的个人历史"
+  default_prompt: "使用 $personal-knowledge-recall，在 Obsidian 中定向查找我明确指定的旧讨论或个人经验。"
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,23 @@
+{
+  "AGENTS.md": [
+    ["Minimal Governed Project", "报名工具（合成示例）"],
+    ["Demonstrate the project-delivery-engine file layout.", "用一份离线 CSV 名单服务活动签到。"],
+    ["This is a relocatable example with no production data.", "本目录与配套 QA 都是合成数据，用来试验接续与取证。"]
+  ],
+  "PROJECT_START_HERE.md": [
+    ["Read `AGENTS.md`, `HANDOFF.md`, `STATUS.md`, and `TODO.md`.", "读取 `AGENTS.md`、`HANDOFF.md`、`STATUS.md` 和 `TODO.md`。"],
+    ["Follow the three indexes only when the task needs history, evidence, or material files.", "仅在任务相关时按索引查工程资料；需要当时原话再用 QA 取证。"]
+  ],
+  "STATUS.md": [
+    ["| 项目骨架 | 就绪 | 五件套和三个索引已存在。 |", "| 本机 CSV 名单 | 已选为首版方案 | 合成示例的已记决定；当时理由可按 HANDOFF.md 中的会话定位。 |"],
+    ["| `project-gov validate` | 未执行；复制后填写真实项目事实和语义检查点，再运行并记录实际结果。 | 主线 |", "| 空名单导出 | 待验证 | 主线 |"],
+    ["复制后必须替换示例事实和语义检查点时间。", "现场网络可能不稳；在线共享未验收。"]
+  ],
+  "TODO.md": [
+    ["| 低 | 复制后替换示例事实。 | 已记录真实项目事实和路径。 |", "| 高 | 验证空名单导出。 | 导出 CSV 只有表头，且明确显示人数为 0。 |"]
+  ],
+  "HANDOFF.md": [
+    ["检查点后变化：待确认", "检查点后变化：已核对"],
+    ["2. 读取 `STATUS.md` 和 `TODO.md`。", "2. 读取 `STATUS.md` 和 `TODO.md`，用空名单作为下一条验收用例。\n3. 若用户问当时为什么先做 CSV，用 QA 取证 Skill 定位此示例会话 `DEMO_SESSION_ID`。此追溯只解释历史理由。"]
+  ]
+}

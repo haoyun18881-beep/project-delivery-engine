@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "vault_root": "/absolute/path/to/your/Obsidian Vault",
+  "entry_files": [
+    "00-AI入口.md",
+    "README.md",
+    "Home.md"
+  ],
+  "restricted_paths": []
+}

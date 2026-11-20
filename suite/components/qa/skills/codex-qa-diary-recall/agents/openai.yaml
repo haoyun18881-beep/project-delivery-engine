@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex QA Diary Recall"
+  short_description: "QA 日记原话、日期、证据和 Session 取证"
+  default_prompt: "Use $codex-qa-diary-recall to find exact QA diary evidence, dates, quotes, chat records, session/thread IDs, or a narrow raw Session fallback."
