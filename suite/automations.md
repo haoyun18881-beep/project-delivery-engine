@@ -27,7 +27,7 @@ python -B "$runtime/workflow.py" collect
 python -B "$runtime/workflow.py" evidence --session "<会话编号>"
 ```
 
-也可以使用 `evidence --id <定位编号>` 或 `evidence --day YYYY-MM-DD --query "关键词"`。若已确认日记缺了一条，先在允许范围内找到那份会话文件，再补查和登记。
+也可以使用 `evidence --id <定位编号>`。查关键词时，用 `--session <会话编号>` 或 `--day YYYY-MM-DD` 配合 `--query "关键词"`。若已确认日记缺了一条，先在允许范围内找到那份会话文件，再补查和登记。
 
 ```powershell
 $qaFile = Read-Host "允许补查的单个会话文件路径"
@@ -35,7 +35,7 @@ python -B "$runtime/workflow.py" evidence --raw-session "$qaFile" --query "唯�
 python -B "$runtime/workflow.py" supplement --raw-session "$qaFile" --query "唯一关键词"
 ```
 
-得到用户对该条补证的授权后，执行第二条命令，将命中的一条最终回答登记给日更。它保留来源指纹。原件变化或缺失时需要复核。同一条问答已有正式日记时，以日记为入口。
+得到用户对该条补证的授权后，执行第二条命令，将命中的一条最终回答登记给日更。它保留来源指纹，重复登记同一个版本会返回 `already_recorded`。原件变化或缺失时需要复核。同一条问答已有正式日记时，以日记为入口。
 
 ## 在 Codex 中设定计划
 
@@ -72,7 +72,7 @@ python -B "$runtime/workflow.py" supplement --raw-session "$qaFile" --query "唯
 }
 ```
 
-`skip` 和 `defer` 只需要 `id`、`sha256`、`decision`、`reason`。`apply-daily --snapshot <编号> --review <绝对审阅文件>` 核对每条来源和指纹，再登记判断。新经验采用独立文件，遇到已有内容不同会停下并交人工复核。遇到中断时，保留同一快照和审阅文件，核对现有成果后按原参数续做。待人工判断的 `defer` 与待处理增量分别计数。
+`skip` 和 `defer` 只需要 `id`、`sha256`、`decision`、`reason`。运行 `python -B "<RUNTIME>/workflow.py" apply-daily --snapshot <编号> --review "<审阅文件的绝对路径>"` 核对每条来源和指纹，再登记判断。新经验采用独立文件，遇到已有内容不同会停下并交人工复核。遇到中断时，保留同一快照和审阅文件，核对现有成果后按原参数续做。待人工判断的 `defer` 与待处理增量分别计数。
 
 ### 每周全库语义体检（例如周日 14:00）
 
@@ -84,4 +84,4 @@ python -B "$runtime/workflow.py" supplement --raw-session "$qaFile" --query "唯
 
 审阅文件使用同样的 `snapshot` 和 `items` 结构。每项包含 `path`（Wiki 内相对路径）、`sha256`、`decision`、`reason`。可用结论为 `healthy`、`duplicate`、`conflict`、`stale`、`broken-link`、`orphan`、`wrong-layer`、`source-gap`、`read-failed`。
 
-用 `apply-weekly --snapshot <编号> --review <绝对审阅文件>` 记录这轮覆盖与发现。漏判一页或期间改变了 Wiki 都需重新核对。工具会对每日提炼目录中带来源编号的笔记检查证据指纹。其他笔记的语义与来源由审阅者核对。要采取合并、改写或删除建议时，单独复核出处、存活引用和已有备份。
+用 `python -B "<RUNTIME>/workflow.py" apply-weekly --snapshot <编号> --review "<审阅文件的绝对路径>"` 记录这轮覆盖与发现。漏判一页或期间改变了 Wiki 都需重新核对。工具会对每日提炼目录中带来源编号的笔记检查证据指纹。其他笔记的语义与来源由审阅者核对。要采取合并、改写或删除建议时，单独复核出处、存活引用和已有备份。

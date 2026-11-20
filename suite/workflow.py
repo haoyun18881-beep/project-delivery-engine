@@ -217,10 +217,12 @@ def supplement(runtime, config, file, query):
         "id": key, "day": day, "source": relative, "route": "session-supplement",
         "sha256": digest(excerpt.encode("utf-8")),
     })
-    save_json(inside(runtime, f"supplements/{key}.json"), {
-        "item": item, "excerpt": excerpt, "source_root": root_key, "source_sha256": fingerprint,
-    })
-    return {"recorded": True, **item}
+    path = inside(runtime, f"supplements/{key}.json")
+    record = {"item": item, "excerpt": excerpt, "source_root": root_key, "source_sha256": fingerprint}
+    if path.is_file() and read_json(path) == record:
+        return {"recorded": False, "already_recorded": True, **item}
+    save_json(path, record)
+    return {"recorded": True, "already_recorded": False, **item}
 
 
 def qa_index(runtime, config, wanted=None, *, report_gaps=False):
@@ -272,8 +274,6 @@ def evidence(runtime, config, args):
         raise ValueError("Use --id, --session or --day; use --query with --day for a bounded keyword search")
     if args.day:
         date.fromisoformat(args.day)
-    if args.query and not args.day:
-        raise ValueError("Add --day to limit keyword search to one diary day")
     found = []
     cache = {}
     seen = set()
