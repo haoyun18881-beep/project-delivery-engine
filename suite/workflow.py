@@ -271,7 +271,7 @@ def evidence(runtime, config, args):
         return {"route": "raw-session", "limit": args.limit, "items": results}
 
     if not (args.id or args.session or args.day):
-        raise ValueError("Use --id, --session or --day; use --query with --day for a bounded keyword search")
+        raise ValueError("Set the search scope with --id, --session or --day. --query is an optional keyword filter.")
     if args.day:
         date.fromisoformat(args.day)
     found = []
