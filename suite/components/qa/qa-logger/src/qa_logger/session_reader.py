@@ -54,10 +54,44 @@ def iter_session_files(sessions_root: Path) -> Iterable[Path]:
     return sorted(sessions_root.rglob("*.jsonl"), key=lambda path: path.stat().st_mtime)
 
 
+def message_payload(row: object) -> dict[str, Any]:
+    """Read diary messages from either Codex rollout representation."""
+    if not isinstance(row, dict) or not isinstance(row.get("payload"), dict):
+        return {}
+    payload = row["payload"]
+    if row.get("type") == "event_msg":
+        return payload
+    if row.get("type") != "response_item" or payload.get("type") != "message":
+        return {}
+
+    role = payload.get("role")
+    phase = payload.get("phase")
+    content = payload.get("content")
+    if role not in ("user", "assistant") or not isinstance(content, list):
+        return {}
+    parts = []
+    for item in content:
+        if not isinstance(item, dict) or item.get("type") not in ("input_text", "output_text", "text"):
+            continue
+        text = item.get("text")
+        if isinstance(text, str) and (role != "user" or not should_skip_user_message(text)):
+            parts.append(text)
+    message = "\n".join(parts).strip()
+    if role == "user":
+        return {"type": "user_message", "message": message}
+    if phase in ("final", "final_answer"):
+        return {"type": "agent_message", "message": message, "phase": "final_answer"}
+    if phase == "commentary":
+        return {"type": "agent_message", "message": message, "phase": phase}
+    return {}
+
+
 def parse_session_file(path: Path, include_commentary: bool = False) -> SessionDiary | None:
     meta: SessionMeta | None = None
     turns: list[QaTurn] = []
     current: QaTurn | None = None
+    user_row_type = ""
+    final_row_type = ""
     commentary_buffer: list[AssistantAnswer] = []
 
     with path.open("r", encoding="utf-8") as handle:
@@ -68,10 +102,12 @@ def parse_session_file(path: Path, include_commentary: bool = False) -> SessionD
                 row = json.loads(line)
             except json.JSONDecodeError:
                 continue
+            if not isinstance(row, dict):
+                continue
             row_type = row.get("type")
-            payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
             timestamp = str(row.get("timestamp", ""))
             if row_type == "session_meta":
+                payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
                 # Codex 0.144+ can embed parent session metadata inside a
                 # sub-agent rollout. The first session_meta owns the file;
                 # later copies must never overwrite its identity.
@@ -87,24 +123,42 @@ def parse_session_file(path: Path, include_commentary: bool = False) -> SessionD
                     if meta.thread_source and meta.thread_source != "user":
                         return None
                 continue
-            if row_type != "event_msg":
-                continue
+            payload = message_payload(row)
             event_type = payload.get("type")
             if event_type == "user_message":
                 message = str(payload.get("message", "")).strip()
                 if should_skip_user_message(message):
                     continue
+                if (
+                    current is not None
+                    and not final_row_type
+                    and user_row_type != row_type
+                    and current.question == message
+                ):
+                    # Preserve the legacy timestamp when both representations
+                    # describe the same pending question.
+                    if row_type == "event_msg" and not current.answers and not commentary_buffer:
+                        current.question_time = timestamp
+                        user_row_type = row_type
+                    continue
                 current = finish_turn(current, commentary_buffer, turns)
                 commentary_buffer = []
                 current = QaTurn(question_time=timestamp, question=message)
+                user_row_type = row_type
+                final_row_type = ""
             elif event_type == "agent_message" and current is not None:
                 phase = str(payload.get("phase", ""))
                 message = str(payload.get("message", "")).strip()
                 if not message:
                     continue
+                if row_type == "response_item" and phase == "commentary" and not include_commentary:
+                    continue
                 answer = AssistantAnswer(timestamp=timestamp, text=message, phase=phase)
                 if phase == "final_answer":
+                    if final_row_type and final_row_type != row_type:
+                        continue
                     current.answers.append(answer)
+                    final_row_type = row_type
                 elif include_commentary:
                     current.answers.append(answer)
                 else:
@@ -128,7 +182,7 @@ def read_session_meta(path: Path) -> SessionMeta:
                 row = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if row.get("type") != "session_meta":
+            if not isinstance(row, dict) or row.get("type") != "session_meta":
                 continue
             payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
             return SessionMeta(
@@ -158,10 +212,8 @@ def read_event_at_offset(path: Path, offset: int) -> tuple[dict[str, Any], dict[
         row = json.loads(raw_line.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError):
         return None
-    if not isinstance(row, dict) or row.get("type") != "event_msg":
-        return None
-    payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
-    return row, payload
+    payload = message_payload(row)
+    return (row, payload) if payload else None
 
 
 def parse_session_file_incremental(
@@ -203,6 +255,7 @@ def parse_session_file_incremental(
 
     turns: list[QaTurn] = []
     current: QaTurn | None = None
+    user_row_type = ""
     commentary_buffer: list[AssistantAnswer] = []
     committed_offset = start_offset
     turn_start_offset = start_offset
@@ -220,6 +273,7 @@ def parse_session_file_incremental(
         if payload.get("type") != "user_message" or should_skip_user_message(message):
             raise RuntimeError(f"pending user offset does not reference a recordable user event: {path}")
         current = QaTurn(question_time=str(row.get("timestamp", "")), question=message)
+        user_row_type = row["type"]
         turn_start_offset = pending_turn_offset
     if current is not None and pending_commentary_offset is not None and 0 <= pending_commentary_offset < start_offset:
         loaded = read_event_at_offset(path, pending_commentary_offset)
@@ -263,12 +317,11 @@ def parse_session_file_incremental(
             # optional trailing LF yet. It is safe to process and commit.
             committed_offset = line_end
 
-            row_type = row.get("type")
-            payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
-            timestamp = str(row.get("timestamp", ""))
-            if row_type != "event_msg":
+            payload = message_payload(row)
+            if not payload:
                 continue
-
+            row_type = row["type"]
+            timestamp = str(row.get("timestamp", ""))
             event_type = payload.get("type")
             if event_type == "user_message":
                 message = str(payload.get("message", "")).strip()
@@ -276,11 +329,19 @@ def parse_session_file_incremental(
                 # close a real main-thread turn that is waiting for its final.
                 if should_skip_user_message(message):
                     continue
+                if current is not None and user_row_type != row_type and current.question == message:
+                    if row_type == "event_msg" and last_commentary_offset is None:
+                        current.question_time = timestamp
+                        user_row_type = row_type
+                        turn_start_offset = line_start
+                        turn_reloadable = len(raw_line) <= MAX_PENDING_EVENT_BYTES
+                    continue
                 if current is not None:
                     finish_turn(current, commentary_buffer, turns)
                 commentary_buffer = []
                 last_commentary_offset = None
                 current = QaTurn(question_time=timestamp, question=message)
+                user_row_type = row_type
                 turn_start_offset = line_start
                 turn_reloadable = len(raw_line) <= MAX_PENDING_EVENT_BYTES
                 continue
@@ -289,6 +350,8 @@ def parse_session_file_incremental(
                 phase = str(payload.get("phase", ""))
                 message = str(payload.get("message", "")).strip()
                 if not message:
+                    continue
+                if row_type == "response_item" and phase == "commentary" and not include_commentary:
                     continue
                 answer = AssistantAnswer(timestamp=timestamp, text=message, phase=phase)
                 if phase == "final_answer":
@@ -312,7 +375,13 @@ def parse_session_file_incremental(
     safe_eof_offset = incomplete_tail_offset if incomplete_tail_offset is not None else eof_offset
     committed_offset = max(committed_offset, safe_eof_offset)
     if current is not None and not turn_reloadable:
-        raise RuntimeError(f"pending user event exceeds the {MAX_PENDING_EVENT_BYTES}-byte reload bound: {path}")
+        if user_row_type != "response_item":
+            raise RuntimeError(f"pending user event exceeds the {MAX_PENDING_EVENT_BYTES}-byte reload bound: {path}")
+        # A response_item can include a large attachment. Retry from its
+        # start once the file grows, without storing the message in state.
+        committed_offset = turn_start_offset
+        last_commentary_offset = None
+        commentary_reloadable = True
     if current is not None and last_commentary_offset is not None and not commentary_reloadable:
         raise RuntimeError(f"pending commentary event exceeds the reload bound: {path}")
     next_turn_offset = turn_start_offset if current is not None else None
@@ -348,14 +417,11 @@ def finish_turn(
 
 def should_skip_user_message(message: str) -> bool:
     stripped = message.strip()
-    if not stripped:
-        return True
-    if stripped.startswith("<subagent_notification>"):
-        return True
-    if stripped.startswith("<environment_context>"):
-        return True
-    if stripped.startswith("<recommended_plugins>"):
-        return True
-    if stripped.startswith("<turn_aborted>"):
-        return True
-    return False
+    return not stripped or stripped.startswith((
+        "<subagent_notification>",
+        "<environment_context>",
+        "<recommended_plugins>",
+        "<turn_aborted>",
+        "<codex_delegation>",
+        "# AGENTS.md instructions for ",
+    ))

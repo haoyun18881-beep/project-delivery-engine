@@ -185,8 +185,20 @@ def demo(root):
         ("20:04:00", "event_msg", {"type": "agent_message", "phase": "final_answer", "message": "好的。"}),
     ])
     write_demo_session(archived, DEMO_ARCHIVED_ID, project, [
-        ("20:08:00", "event_msg", {"type": "user_message", "message": "怎么验证断网时的 CSV 名单还能核对？"}),
-        ("20:09:00", "event_msg", {"type": "agent_message", "phase": "final_answer", "message": "先导出本机 CSV，再关闭网络，使用导出文件现场核对一条测试报名。核对能读到快照且清楚标明导出时间。"}),
+        ("20:08:00", "response_item", {
+            "type": "message",
+            "role": "user",
+            "content": [{"type": "input_text", "text": "怎么验证断网时的 CSV 名单还能核对？"}],
+        }),
+        ("20:09:00", "response_item", {
+            "type": "message",
+            "role": "assistant",
+            "phase": "final_answer",
+            "content": [{
+                "type": "output_text",
+                "text": "先导出本机 CSV，再关闭网络，使用导出文件现场核对一条测试报名。核对能读到快照且清楚标明导出时间。",
+            }],
+        }),
     ])
     # The project is not writable until the controlled initialization runs.
     startup = create_project(project, root, REPO / "scripts" / "project-gov.mjs")
